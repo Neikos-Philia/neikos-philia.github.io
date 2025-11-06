@@ -3027,14 +3027,11 @@
 
         .score-tooltip {
             display: none;
-            position: absolute;
-            bottom: 100%;
-            right: 0;
+            position: fixed;
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             padding: 15px;
-            margin-bottom: 10px;
             min-width: 300px;
             max-width: 350px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -3045,18 +3042,15 @@
 
         /* 气泡位置调整类 */
         .score-tooltip.tooltip-bottom {
-            bottom: auto;
-            top: calc(100% + 10px);
+            display: none;
         }
 
         .score-tooltip.tooltip-left {
-            right: auto;
-            left: -350px;
+            display: none;
         }
 
         .score-tooltip.tooltip-right {
-            left: auto;
-            right: -350px;
+            display: none;
         }
 
         html.dark-mode .score-tooltip {
@@ -7549,7 +7543,7 @@ https://raw.githubusercontent.com/cmliu/WorkerVless2sub/main/addressesapi.txt"
             // 如果显示气泡，调整位置并添加点击事件监听器来关闭它
             if (!isShowing) {
                 setTimeout(() => {
-                    adjustTooltipPosition(tooltip);
+                    positionTooltipNearMouse(tooltip, helpIcon);
 
                     const closeTooltip = (e) => {
                         if (!tooltip.contains(e.target) && !helpIcon.contains(e.target)) {
@@ -7562,33 +7556,36 @@ https://raw.githubusercontent.com/cmliu/WorkerVless2sub/main/addressesapi.txt"
             }
         }
 
-        // 调整气泡位置，避免超出屏幕
-        function adjustTooltipPosition(tooltip) {
-            // 移除之前的位置调整类
-            tooltip.classList.remove('tooltip-bottom', 'tooltip-top', 'tooltip-left', 'tooltip-right');
-
-            const rect = tooltip.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
+        // 将气泡位置设置在鼠标附近
+        function positionTooltipNearMouse(tooltip, helpIcon) {
+            const iconRect = helpIcon.getBoundingClientRect();
+            const tooltipWidth = tooltip.offsetWidth;
+            const tooltipHeight = tooltip.offsetHeight;
             const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const padding = 10;
 
-            // 检查气泡是否超出顶部
-            if (rect.top < 20) {
-                tooltip.classList.add('tooltip-bottom');
-                tooltip.style.bottom = 'auto';
-                tooltip.style.top = 'calc(100% + 10px)';
+            let left = iconRect.right + padding;
+            let top = iconRect.top - tooltipHeight / 2;
+
+            // 如果气泡超出右边界，显示在左边
+            if (left + tooltipWidth > windowWidth - padding) {
+                left = iconRect.left - tooltipWidth - padding;
             }
-            // 检查气泡是否超出右边
-            else if (rect.right > windowWidth - 20) {
-                tooltip.style.right = 'auto';
-                tooltip.style.left = 'auto';
-                tooltip.style.transform = 'translateX(-100%)';
+
+            // 如果气泡超出顶部，调整到下方
+            if (top < padding) {
+                top = iconRect.top + padding;
             }
-            // 检查气泡是否超出左边
-            else if (rect.left < 20) {
-                tooltip.style.left = '0';
-                tooltip.style.right = 'auto';
-                tooltip.style.transform = 'translateX(0)';
+
+            // 如果气泡超出底部，调整到上方
+            if (top + tooltipHeight > windowHeight - padding) {
+                top = windowHeight - tooltipHeight - padding;
             }
+
+            tooltip.style.position = 'fixed';
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
         }
 
         // 显示 IP 详情弹窗
