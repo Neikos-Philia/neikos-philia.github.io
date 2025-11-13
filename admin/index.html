@@ -7230,9 +7230,41 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                 showToast('已覆盖到自定义优选地址 (前16个)', 'success');
             } else if (mode === 'append') {
                 const currentValue = textarea.value.trim();
-                textarea.value = currentValue ? currentValue + '\n' + newContent : newContent;
-                console.log('[在线优选] 追加保存完成');
-                showToast('已追加到自定义优选地址 (前16个)', 'success');
+                
+                // 追加保存时进行去重处理
+                if (currentValue) {
+                    // 将现有内容和新内容合并
+                    const existingLines = currentValue.split('\n').map(line => line.trim()).filter(line => line);
+                    const newLines = newContent.split('\n').map(line => line.trim()).filter(line => line);
+                    
+                    // 使用 Set 进行去重（基于完整行内容）
+                    const uniqueLinesSet = new Set(existingLines);
+                    let addedCount = 0;
+                    
+                    // 添加新行，同时统计实际添加的数量
+                    newLines.forEach(line => {
+                        if (!uniqueLinesSet.has(line)) {
+                            uniqueLinesSet.add(line);
+                            addedCount++;
+                        }
+                    });
+                    
+                    // 合并去重后的内容
+                    textarea.value = Array.from(uniqueLinesSet).join('\n');
+                    
+                    console.log(`[在线优选] 追加保存完成，新增 ${addedCount} 个IP，去重 ${newLines.length - addedCount} 个重复项`);
+                    if (addedCount === 0) {
+                        showToast('所有IP均已存在，未添加新内容', 'info');
+                    } else if (addedCount < newLines.length) {
+                        showToast(`已追加 ${addedCount} 个新IP，过滤 ${newLines.length - addedCount} 个重复项`, 'success');
+                    } else {
+                        showToast(`已追加 ${addedCount} 个IP到自定义优选地址`, 'success');
+                    }
+                } else {
+                    textarea.value = newContent;
+                    console.log('[在线优选] 追加保存完成（原内容为空）');
+                    showToast('已追加到自定义优选地址 (前16个)', 'success');
+                }
             }
 
             // 标记为已修改
