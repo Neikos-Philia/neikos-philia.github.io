@@ -4748,7 +4748,7 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
                     </div>
                     <div class="latency-card-content">
                         <div class="latency-bars" id="bars-${siteName}">
-                            ${Array(8).fill().map(() => '<div class="latency-bar loading" style="background-color: rgba(250, 171, 65, 0.5);"></div>').join('')}
+                            ${Array(10).fill().map(() => '<div class="latency-bar loading" style="background-color: rgba(250, 171, 65, 0.5);"></div>').join('')}
                         </div>
                         <p class="latency-value" id="latency-${siteName}">准备测试...</p>
                     </div>
@@ -4791,10 +4791,26 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
             if (!valueElement || !barsElement) return;
 
             // 计算平方根均值 (RMS): sqrt(sum(x²)/n)
+            // 先过滤有效的延迟值（排除-1表示失败的情况）
             const validLatencies = latencies.filter(l => l !== -1);
-            const avgLatency = validLatencies.length > 0 
-                ? Math.sqrt(validLatencies.reduce((a, b) => a + b * b, 0) / validLatencies.length)
-                : -1;
+            let avgLatency = -1;
+            
+            if (validLatencies.length > 0) {
+                // 如果有有效的数据，去掉最高和最低延迟
+                if (validLatencies.length > 2) {
+                    const sorted = [...validLatencies].sort((a, b) => a - b);
+                    // 移除最低和最高
+                    const trimmedLatencies = sorted.slice(1, sorted.length - 1);
+                    // 对剩余数据计算平方根平均数
+                    avgLatency = Math.sqrt(trimmedLatencies.reduce((a, b) => a + b * b, 0) / trimmedLatencies.length);
+                } else if (validLatencies.length === 2) {
+                    // 如果只有2个有效数据，去掉最高和最低后就没有数据了，使用所有有效数据
+                    avgLatency = Math.sqrt(validLatencies.reduce((a, b) => a + b * b, 0) / validLatencies.length);
+                } else {
+                    // 如果只有1个或更少有效数据，直接使用
+                    avgLatency = validLatencies[0];
+                }
+            }
 
             if (avgLatency === -1) {
                 valueElement.textContent = '连接失败';
@@ -4820,13 +4836,13 @@ vless://7b102311-43fd-4e8f-977e-8090623c101d@edt-pages.github.io:443?security=tl
         async function startLatencyTest() {
             generateLatencyCards();
 
-            // 为所有网站并发执行8次测试
+            // 为所有网站并发执行10次测试
             const testPromises = latencySites.map(async (site) => {
                 const siteName = site.name.toLowerCase().replace(/\s+/g, '-');
                 const latencies = [];
 
-                // 8次测试并发执行
-                for (let i = 0; i < 8; i++) {
+                // 10次测试并发执行
+                for (let i = 0; i < 10; i++) {
                     const latency = await testLatency(site);
                     latencies.push(latency);
                     updateLatencyDisplay(siteName, latencies);
